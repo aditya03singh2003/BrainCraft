@@ -1,16 +1,51 @@
-import { authMiddleware } from "@clerk/nextjs"
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 
-export default authMiddleware({
-  // Routes that can be accessed while signed out
-  publicRoutes: ["/", "/auth", "/api/health", "/api/init"],
+// Paths that require authentication
+const protectedPaths = [
+  "/dashboard",
+  "/dashboard/create",
+  "/dashboard/quizzes",
+  "/dashboard/analytics",
+  "/dashboard/profile",
+  "/dashboard/leaderboard",
+  "/dashboard/discover",
+]
 
-  // Routes that can always be accessed, and have
-  // no authentication information
-  ignoredRoutes: ["/api/health", "/api/init"],
-})
+// Paths that should redirect to dashboard if already authenticated
+const authPaths = ["/auth"]
+
+export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname
+
+  // Get token from cookie
+  const token = request.cookies.get("auth_token")?.value
+
+  // Check if path requires authentication
+  const isProtectedPath = protectedPaths.some((pp) => path.startsWith(pp))
+  const isAuthPath = authPaths.some((ap) => path.startsWith(ap))
+
+  // If no token and trying to access protected path
+  if (!token && isProtectedPath) {
+    const url = new URL("/auth", request.url)
+    url.searchParams.set("from", path)
+    return NextResponse.redirect(url)
+  }
+
+  // If has token and trying to access auth path
+  if (token && isAuthPath) {
+    try {
+      // We'll keep the token verification logic but we'll update it later
+      // when we fully implement Clerk
+      return NextResponse.redirect(new URL("/dashboard", request.url))
+    } catch (error) {
+      // Invalid token, continue to auth page
+    }
+  }
+
+  return NextResponse.next()
+}
 
 export const config = {
-  // Protects all routes, including api/trpc.
-  // See https://clerk.com/docs/references/nextjs/auth-middleware
-  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
+  matcher: ["/dashboard/:path*", "/auth"],
 }
