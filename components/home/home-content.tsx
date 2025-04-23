@@ -1,9 +1,8 @@
 "use client"
-
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import { Brain, ChevronRight, FileQuestion, Rocket, Sparkles, Users } from "lucide-react"
+import { SignInButton, SignUpButton } from "@clerk/nextjs"
 
 export default function HomeContent() {
   return (
@@ -18,15 +17,16 @@ export default function HomeContent() {
           </span>
         </div>
         <div className="flex gap-4">
-          <Button asChild variant="outline" className="animated-border">
-            <Link href="/auth">Login</Link>
-          </Button>
-          <Button
-            asChild
-            className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
-          >
-            <Link href="/auth?tab=register">Get Started</Link>
-          </Button>
+          <SignInButton mode="modal">
+            <Button variant="outline" className="animated-border">
+              Login
+            </Button>
+          </SignInButton>
+          <SignUpButton mode="modal">
+            <Button className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700">
+              Get Started
+            </Button>
+          </SignUpButton>
         </div>
       </header>
 
@@ -55,19 +55,20 @@ export default function HomeContent() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <Button
-              asChild
-              size="lg"
-              className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
-            >
-              <Link href="/auth?tab=register">
+            <SignUpButton mode="modal">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
+              >
                 Get Started Free
                 <ChevronRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="animated-border">
-              <Link href="/auth">Login to Your Account</Link>
-            </Button>
+              </Button>
+            </SignUpButton>
+            <SignInButton mode="modal">
+              <Button size="lg" variant="outline" className="animated-border">
+                Login to Your Account
+              </Button>
+            </SignInButton>
           </motion.div>
         </div>
 
@@ -131,16 +132,15 @@ export default function HomeContent() {
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             Join thousands of users who are creating, sharing, and mastering knowledge with BrainCraft.
           </p>
-          <Button
-            asChild
-            size="lg"
-            className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
-          >
-            <Link href="/auth?tab=register">
+          <SignUpButton mode="modal">
+            <Button
+              size="lg"
+              className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
+            >
               Get Started Today
               <ChevronRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+            </Button>
+          </SignUpButton>
         </div>
       </main>
 

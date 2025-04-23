@@ -1,52 +1,16 @@
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { jwtVerify } from "jose"
+import { authMiddleware } from "@clerk/nextjs"
 
-// Paths that require authentication
-const protectedPaths = [
-  "/dashboard",
-  "/dashboard/create",
-  "/dashboard/quizzes",
-  "/dashboard/analytics",
-  "/dashboard/profile",
-]
+export default authMiddleware({
+  // Routes that can be accessed while signed out
+  publicRoutes: ["/", "/auth", "/api/health", "/api/init"],
 
-// Paths that should redirect to dashboard if already authenticated
-const authPaths = ["/auth"]
-
-export async function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname
-
-  // Get token from cookie
-  const token = request.cookies.get("auth_token")?.value
-
-  // Check if path requires authentication
-  const isProtectedPath = protectedPaths.some((pp) => path.startsWith(pp))
-  const isAuthPath = authPaths.some((ap) => path.startsWith(ap))
-
-  // If no token and trying to access protected path
-  if (!token && isProtectedPath) {
-    const url = new URL("/auth", request.url)
-    url.searchParams.set("from", path)
-    return NextResponse.redirect(url)
-  }
-
-  // If has token and trying to access auth path
-  if (token && isAuthPath) {
-    try {
-      const secret = new TextEncoder().encode(
-        process.env.JWT_SECRET || "braincraft_secure_jwt_secret_key_change_in_production",
-      )
-      await jwtVerify(token, secret)
-      return NextResponse.redirect(new URL("/dashboard", request.url))
-    } catch (error) {
-      // Invalid token, continue to auth page
-    }
-  }
-
-  return NextResponse.next()
-}
+  // Routes that can always be accessed, and have
+  // no authentication information
+  ignoredRoutes: ["/api/health", "/api/init"],
+})
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/auth"],
+  // Protects all routes, including api/trpc.
+  // See https://clerk.com/docs/references/nextjs/auth-middleware
+  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
 }

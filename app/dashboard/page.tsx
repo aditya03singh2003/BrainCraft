@@ -1,19 +1,21 @@
-import { getSession } from "@/lib/auth"
 import { redirect } from "next/navigation"
+import { auth, currentUser } from "@clerk/nextjs/server"
 import { query } from "@/app/api/db/init"
 import DashboardView from "@/components/dashboard/dashboard-view"
 
 export default async function DashboardPage() {
-  const session = await getSession()
+  const { userId } = auth()
 
-  if (!session) {
+  if (!userId) {
     redirect("/auth")
   }
+
+  const user = await currentUser()
 
   // Get recent quizzes created by user
   const recentQuizzesResult = await query(
     "SELECT * FROM quizzes WHERE creator_id = $1 ORDER BY created_at DESC LIMIT 5",
-    [session.id],
+    [userId],
   )
 
   // Get recent quiz attempts by user
@@ -26,7 +28,7 @@ export default async function DashboardPage() {
     ORDER BY qa.completed_at DESC
     LIMIT 5
   `,
-    [session.id],
+    [userId],
   )
 
   // Get user stats
@@ -42,7 +44,7 @@ export default async function DashboardPage() {
     FROM user_stats us
     WHERE us.user_id = $1
   `,
-    [session.id],
+    [userId],
   )
 
   const stats = statsResult.rows[0] || {
@@ -66,8 +68,16 @@ export default async function DashboardPage() {
     ORDER BY attempt_count DESC
     LIMIT 5
   `,
-    [session.id],
+    [userId],
   )
+
+  // Create a session object compatible with our components
+  const session = {
+    id: userId,
+    username: user?.username || user?.firstName || "User",
+    email: user?.emailAddresses[0]?.emailAddress || "",
+    role: "user",
+  }
 
   return (
     <DashboardView

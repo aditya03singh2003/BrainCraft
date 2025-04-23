@@ -10,26 +10,13 @@ export async function initializeDatabase() {
   try {
     const client = await pool.connect()
     try {
-      // Create users table
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS users (
-          id SERIAL PRIMARY KEY,
-          username VARCHAR(255) UNIQUE NOT NULL,
-          email VARCHAR(255) UNIQUE NOT NULL,
-          password_hash VARCHAR(255) NOT NULL,
-          role VARCHAR(50) DEFAULT 'user',
-          avatar_url TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-      `)
-
       // Create quizzes table
       await client.query(`
         CREATE TABLE IF NOT EXISTS quizzes (
           id SERIAL PRIMARY KEY,
           title VARCHAR(255) NOT NULL,
           description TEXT,
-          creator_id INTEGER REFERENCES users(id),
+          creator_id VARCHAR(255) NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           is_published BOOLEAN DEFAULT FALSE,
@@ -69,7 +56,7 @@ export async function initializeDatabase() {
         CREATE TABLE IF NOT EXISTS quiz_attempts (
           id SERIAL PRIMARY KEY,
           quiz_id INTEGER REFERENCES quizzes(id) ON DELETE CASCADE,
-          user_id INTEGER REFERENCES users(id),
+          user_id VARCHAR(255) NOT NULL,
           score INTEGER NOT NULL,
           max_score INTEGER NOT NULL,
           time_taken INTEGER,
@@ -93,7 +80,7 @@ export async function initializeDatabase() {
       await client.query(`
         CREATE TABLE IF NOT EXISTS user_stats (
           id SERIAL PRIMARY KEY,
-          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          user_id VARCHAR(255) NOT NULL,
           quizzes_created INTEGER DEFAULT 0,
           quizzes_taken INTEGER DEFAULT 0,
           total_points INTEGER DEFAULT 0,

@@ -1,27 +1,26 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { query } from "@/app/api/db/init"
-import { getSession } from "@/lib/auth"
+import { auth } from "@clerk/nextjs/server"
 
 // Create a new quiz
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession()
+    const { userId } = auth()
 
-    if (!session) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { title, description } = await request.json()
+    const { title, description, category, difficulty, time_limit, is_published } = await request.json()
 
     if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 })
     }
 
-    const result = await query("INSERT INTO quizzes (title, description, creator_id) VALUES ($1, $2, $3) RETURNING *", [
-      title,
-      description,
-      session.id,
-    ])
+    const result = await query(
+      "INSERT INTO quizzes (title, description, creator_id, category, difficulty, time_limit, is_published) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+      [title, description, userId, category, difficulty, time_limit, is_published],
+    )
 
     return NextResponse.json(result.rows[0], { status: 201 })
   } catch (error) {
@@ -33,13 +32,13 @@ export async function POST(request: NextRequest) {
 // Get all quizzes for the current user
 export async function GET() {
   try {
-    const session = await getSession()
+    const { userId } = auth()
 
-    if (!session) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const result = await query("SELECT * FROM quizzes WHERE creator_id = $1 ORDER BY created_at DESC", [session.id])
+    const result = await query("SELECT * FROM quizzes WHERE creator_id = $1 ORDER BY created_at DESC", [userId])
 
     return NextResponse.json(result.rows, { status: 200 })
   } catch (error) {

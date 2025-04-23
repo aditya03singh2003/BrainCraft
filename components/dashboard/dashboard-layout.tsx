@@ -29,8 +29,10 @@ import {
   Search,
   Settings,
   Sparkles,
+  Trophy,
   User,
 } from "lucide-react"
+import { useClerk, useUser } from "@clerk/nextjs"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -39,6 +41,9 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const { signOut } = useClerk()
+  const { user } = useUser()
+
   const [isMounted, setIsMounted] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
 
@@ -54,15 +59,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [])
 
   const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      })
-      router.push("/auth")
-      router.refresh()
-    } catch (error) {
-      console.error("Logout error:", error)
-    }
+    await signOut(() => router.push("/"))
   }
 
   // Animation variants
@@ -83,6 +80,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { href: "/dashboard/create", label: "Create Quiz", icon: Plus },
     { href: "/dashboard/discover", label: "Discover", icon: Sparkles },
     { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/dashboard/leaderboard", label: "Leaderboard", icon: Trophy },
     { href: "/dashboard/profile", label: "Profile", icon: User },
   ]
 
@@ -196,9 +194,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8 border border-white/20">
-                    <AvatarImage src="/placeholder-user.jpg" alt="User" />
+                    <AvatarImage src={user?.imageUrl || "/placeholder.svg"} alt={user?.username || "User"} />
                     <AvatarFallback className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white">
-                      U
+                      {user?.firstName?.charAt(0) || user?.username?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>

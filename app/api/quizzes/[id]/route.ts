@@ -1,14 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { query } from "@/app/api/db/init"
-import { getSession } from "@/lib/auth"
+import { auth } from "@clerk/nextjs/server"
 
 // Get a specific quiz
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const quizId = params.id
-    const session = await getSession()
+    const { userId } = auth()
 
-    if (!session) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -53,16 +53,16 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const quizId = params.id
-    const session = await getSession()
+    const { userId } = auth()
 
-    if (!session) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { title, description, is_published } = await request.json()
+    const { title, description, is_published, category, difficulty, time_limit } = await request.json()
 
     // Check if quiz exists and belongs to the user
-    const checkResult = await query("SELECT * FROM quizzes WHERE id = $1 AND creator_id = $2", [quizId, session.id])
+    const checkResult = await query("SELECT * FROM quizzes WHERE id = $1 AND creator_id = $2", [quizId, userId])
 
     if (checkResult.rows.length === 0) {
       return NextResponse.json({ error: "Quiz not found or unauthorized" }, { status: 404 })
@@ -70,8 +70,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     // Update quiz
     const result = await query(
-      "UPDATE quizzes SET title = $1, description = $2, is_published = $3 WHERE id = $4 RETURNING *",
-      [title, description, is_published, quizId],
+      "UPDATE quizzes SET title = $1, description = $2, is_published = $3, category = $4, difficulty = $5, time_limit = $6 WHERE id = $7 RETURNING *",
+      [title, description, is_published, category, difficulty, time_limit, quizId],
     )
 
     return NextResponse.json(result.rows[0], { status: 200 })
@@ -85,14 +85,14 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const quizId = params.id
-    const session = await getSession()
+    const { userId } = auth()
 
-    if (!session) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     // Check if quiz exists and belongs to the user
-    const checkResult = await query("SELECT * FROM quizzes WHERE id = $1 AND creator_id = $2", [quizId, session.id])
+    const checkResult = await query("SELECT * FROM quizzes WHERE id = $1 AND creator_id = $2", [quizId, userId])
 
     if (checkResult.rows.length === 0) {
       return NextResponse.json({ error: "Quiz not found or unauthorized" }, { status: 404 })
