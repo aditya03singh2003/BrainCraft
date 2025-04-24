@@ -1,14 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { query } from "@/app/api/db/init"
-import { getSession } from "@/lib/auth"
+import { auth } from "@clerk/nextjs/server"
 
 // Start a new quiz attempt
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const quizId = params.id
-    const session = await getSession()
+    const { userId } = auth()
 
-    if (!session) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     // Create a new attempt
     const attemptResult = await query(
       "INSERT INTO quiz_attempts (quiz_id, user_id, score, max_score, started_at) VALUES ($1, $2, 0, 0, NOW()) RETURNING *",
-      [quizId, session.id],
+      [quizId, userId],
     )
 
     // Get questions for this quiz (without correct answers)
@@ -80,9 +80,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const quizId = params.id
-    const session = await getSession()
+    const { userId } = auth()
 
-    if (!session) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -95,7 +95,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // Verify this attempt belongs to the user
     const attemptResult = await query("SELECT * FROM quiz_attempts WHERE id = $1 AND user_id = $2 AND quiz_id = $3", [
       attempt_id,
-      session.id,
+      userId,
       quizId,
     ])
 
@@ -149,7 +149,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         average_score = (user_stats.total_points + $2) / (user_stats.quizzes_taken + 1),
         last_activity = NOW()
     `,
-      [session.id, totalScore],
+      [userId, totalScore],
     )
 
     // Get correct answers for feedback
@@ -191,9 +191,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const quizId = params.id
-    const session = await getSession()
+    const { userId } = auth()
 
-    if (!session) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -206,7 +206,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       WHERE qa.quiz_id = $1 AND qa.user_id = $2
       ORDER BY qa.completed_at DESC
     `,
-      [quizId, session.id],
+      [quizId, userId],
     )
 
     return NextResponse.json(attemptsResult.rows, { status: 200 })

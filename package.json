@@ -62,9 +62,9 @@
     "pg-native": "latest",
     "framer-motion": "latest",
     "bcryptjs": "latest",
-    "jose": "latest",
+    "@clerk/nextjs": "latest",
     "pg": "latest",
-    "@clerk/nextjs": "latest"
+    "svix": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

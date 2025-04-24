@@ -2,7 +2,10 @@ import { Pool } from "pg"
 
 // Initialize PostgreSQL connection pool with Neon database
 const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL,
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 })
 
 // Database initialization function
@@ -10,6 +13,18 @@ export async function initializeDatabase() {
   try {
     const client = await pool.connect()
     try {
+      // Create users table for storing additional user data
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS users (
+          id VARCHAR(255) PRIMARY KEY,
+          username VARCHAR(255) NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          avatar_url TEXT,
+          role VARCHAR(50) DEFAULT 'user',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `)
+
       // Create quizzes table
       await client.query(`
         CREATE TABLE IF NOT EXISTS quizzes (

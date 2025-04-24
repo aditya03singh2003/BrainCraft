@@ -7,10 +7,33 @@ export default async function DashboardPage() {
   const { userId } = auth()
 
   if (!userId) {
-    redirect("/auth")
+    redirect("/sign-in")
   }
 
   const user = await currentUser()
+
+  if (!user) {
+    redirect("/sign-in")
+  }
+
+  // Check if user exists in our database, if not create them
+  const userCheck = await query("SELECT * FROM users WHERE id = $1", [userId])
+
+  if (userCheck.rows.length === 0) {
+    // Create user in our database
+    await query("INSERT INTO users (id, username, email, avatar_url, created_at) VALUES ($1, $2, $3, $4, NOW())", [
+      userId,
+      user.username || `${user.firstName || ""}${user.lastName || ""}`,
+      user.emailAddresses[0]?.emailAddress,
+      user.imageUrl,
+    ])
+
+    // Create initial user stats
+    await query(
+      "INSERT INTO user_stats (user_id, quizzes_created, quizzes_taken, total_points, average_score) VALUES ($1, 0, 0, 0, 0)",
+      [userId],
+    )
+  }
 
   // Get recent quizzes created by user
   const recentQuizzesResult = await query(
@@ -62,7 +85,7 @@ export default async function DashboardPage() {
     SELECT q.*, u.username as creator_name, COUNT(qa.id) as attempt_count
     FROM quizzes q
     JOIN users u ON q.creator_id = u.id
-    LEFT JOIN quiz_attempts qa ON q.quiz_id = qa.id
+    LEFT JOIN quiz_attempts qa ON q.id = qa.id
     WHERE q.is_published = true AND q.creator_id != $1
     GROUP BY q.id, u.username
     ORDER BY attempt_count DESC
@@ -74,8 +97,8 @@ export default async function DashboardPage() {
   // Create a session object compatible with our components
   const session = {
     id: userId,
-    username: user?.username || user?.firstName || "User",
-    email: user?.emailAddresses[0]?.emailAddress || "",
+    username: user.username || user.firstName || "User",
+    email: user.emailAddresses[0]?.emailAddress || "",
     role: "user",
   }
 

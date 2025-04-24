@@ -1,21 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { query } from "@/app/api/db/init"
-import { getSession } from "@/lib/auth"
+import { auth } from "@clerk/nextjs/server"
 
 // Update a question
 export async function PUT(request: NextRequest, { params }: { params: { id: string; questionId: string } }) {
   try {
     const { id: quizId, questionId } = params
-    const session = await getSession()
+    const { userId } = auth()
 
-    if (!session) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     // Check if quiz exists and belongs to the user
     const checkResult = await query(
       "SELECT q.* FROM questions q JOIN quizzes qz ON q.quiz_id = qz.id WHERE q.id = $1 AND qz.creator_id = $2",
-      [questionId, session.id],
+      [questionId, userId],
     )
 
     if (checkResult.rows.length === 0) {
@@ -82,16 +82,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string; questionId: string } }) {
   try {
     const { id: quizId, questionId } = params
-    const session = await getSession()
+    const { userId } = auth()
 
-    if (!session) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     // Check if quiz exists and belongs to the user
     const checkResult = await query(
       "SELECT q.* FROM questions q JOIN quizzes qz ON q.quiz_id = qz.id WHERE q.id = $1 AND qz.creator_id = $2",
-      [questionId, session.id],
+      [questionId, userId],
     )
 
     if (checkResult.rows.length === 0) {
