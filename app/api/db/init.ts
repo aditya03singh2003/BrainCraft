@@ -2,7 +2,9 @@ import { Pool } from "pg"
 
 // Initialize PostgreSQL connection pool with Neon database
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString:
+    process.env.DATABASE_URL ||
+    "postgresql://neondb_owner:npg_S1rkhuoT4VqD@ep-plain-moon-a12q41hh-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
   ssl: {
     rejectUnauthorized: false,
   },
@@ -13,14 +15,15 @@ export async function initializeDatabase() {
   try {
     const client = await pool.connect()
     try {
-      // Create users table for storing additional user data
+      // Create users table
       await client.query(`
         CREATE TABLE IF NOT EXISTS users (
-          id VARCHAR(255) PRIMARY KEY,
+          id SERIAL PRIMARY KEY,
           username VARCHAR(255) NOT NULL,
           email VARCHAR(255) UNIQUE NOT NULL,
-          avatar_url TEXT,
+          password_hash VARCHAR(255) NOT NULL,
           role VARCHAR(50) DEFAULT 'user',
+          avatar_url TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `)
@@ -31,7 +34,7 @@ export async function initializeDatabase() {
           id SERIAL PRIMARY KEY,
           title VARCHAR(255) NOT NULL,
           description TEXT,
-          creator_id VARCHAR(255) NOT NULL,
+          creator_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           is_published BOOLEAN DEFAULT FALSE,
@@ -71,7 +74,7 @@ export async function initializeDatabase() {
         CREATE TABLE IF NOT EXISTS quiz_attempts (
           id SERIAL PRIMARY KEY,
           quiz_id INTEGER REFERENCES quizzes(id) ON DELETE CASCADE,
-          user_id VARCHAR(255) NOT NULL,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
           score INTEGER NOT NULL,
           max_score INTEGER NOT NULL,
           time_taken INTEGER,
@@ -95,12 +98,13 @@ export async function initializeDatabase() {
       await client.query(`
         CREATE TABLE IF NOT EXISTS user_stats (
           id SERIAL PRIMARY KEY,
-          user_id VARCHAR(255) NOT NULL,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
           quizzes_created INTEGER DEFAULT 0,
           quizzes_taken INTEGER DEFAULT 0,
           total_points INTEGER DEFAULT 0,
           average_score FLOAT DEFAULT 0,
-          last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id)
         );
       `)
 
@@ -140,7 +144,7 @@ export async function checkConnection() {
     return { connected: true, timestamp: result.rows[0].now }
   } catch (error) {
     console.error("Database connection check failed:", error)
-    return { connected: false, error: error.message }
+    return { connected: false, error: error instanceof Error ? error.message : "Unknown error" }
   } finally {
     if (client) client.release()
   }

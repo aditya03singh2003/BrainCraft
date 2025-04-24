@@ -61,10 +61,10 @@
     "@emotion/is-prop-valid": "latest",
     "pg-native": "latest",
     "framer-motion": "latest",
-    "bcryptjs": "latest",
     "@clerk/nextjs": "latest",
     "pg": "latest",
-    "svix": "latest"
+    "bcryptjs": "latest",
+    "jose": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

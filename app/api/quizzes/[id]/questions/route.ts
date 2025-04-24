@@ -1,19 +1,19 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { query } from "@/app/api/db/init"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth"
 
 // Add a question to a quiz
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const quizId = params.id
-    const { userId } = auth()
+    const session = await getSession()
 
-    if (!userId) {
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     // Check if quiz exists and belongs to the user
-    const checkResult = await query("SELECT * FROM quizzes WHERE id = $1 AND creator_id = $2", [quizId, userId])
+    const checkResult = await query("SELECT * FROM quizzes WHERE id = $1 AND creator_id = $2", [quizId, session.id])
 
     if (checkResult.rows.length === 0) {
       return NextResponse.json({ error: "Quiz not found or unauthorized" }, { status: 404 })
@@ -87,9 +87,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const quizId = params.id
-    const { userId } = auth()
+    const session = await getSession()
 
-    if (!userId) {
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

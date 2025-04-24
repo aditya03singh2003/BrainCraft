@@ -27,6 +27,12 @@ export async function POST(request: Request) {
       [username, email, hashedPassword, "user"],
     )
 
+    // Create initial user stats
+    await query(
+      "INSERT INTO user_stats (user_id, quizzes_created, quizzes_taken, total_points, average_score) VALUES ($1, 0, 0, 0, 0)",
+      [result.rows[0].id],
+    )
+
     return NextResponse.json(
       {
         message: "User registered successfully",

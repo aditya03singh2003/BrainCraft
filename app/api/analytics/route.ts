@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server"
 import { query } from "@/app/api/db/init"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth"
 
 export async function GET() {
   try {
-    const { userId } = auth()
+    const session = await getSession()
 
-    if (!userId) {
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     // Get user stats
-    const userStatsResult = await query(`SELECT * FROM user_stats WHERE user_id = $1`, [userId])
+    const userStatsResult = await query(`SELECT * FROM user_stats WHERE user_id = $1`, [session.id])
 
     const userStats = userStatsResult.rows[0] || {
       quizzes_created: 0,
@@ -28,7 +28,7 @@ export async function GET() {
         MAX(created_at) as latest_quiz_date
       FROM quizzes
       WHERE creator_id = $1`,
-      [userId],
+      [session.id],
     )
 
     // Get quiz attempt stats
@@ -39,7 +39,7 @@ export async function GET() {
         MAX(completed_at) as latest_attempt_date
       FROM quiz_attempts
       WHERE user_id = $1`,
-      [userId],
+      [session.id],
     )
 
     // Get most popular quizzes created by user
@@ -54,7 +54,7 @@ export async function GET() {
       GROUP BY q.id
       ORDER BY attempt_count DESC
       LIMIT 5`,
-      [userId],
+      [session.id],
     )
 
     // Get recent activity
@@ -80,7 +80,7 @@ export async function GET() {
       
       ORDER BY activity_date DESC
       LIMIT 10`,
-      [userId],
+      [session.id],
     )
 
     // Get performance by category
@@ -94,7 +94,7 @@ export async function GET() {
       WHERE qa.user_id = $1 AND q.category IS NOT NULL
       GROUP BY q.category
       ORDER BY average_score DESC`,
-      [userId],
+      [session.id],
     )
 
     return NextResponse.json(
